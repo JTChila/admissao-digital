@@ -10,3 +10,4 @@ echo Abrindo o portal no seu navegador padrao...
 start "" "%~dp0index.html"
 echo.
 echo [OK] Portal aberto com sucesso!
+
