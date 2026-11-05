@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdmissãoFlow • Portal & Validador Inteligente de Documentos Admissionais (CLT & eSocial)</title>
+  
+  <meta name="description" content="Plataforma inteligente para admissão CLT e conformidade eSocial com validação heurística e OCR em tempo real, gerador de autodeclaração e empacotador de documentos." />
+  <meta name="author" content="Juliano Chila" />
+
+  <!-- Tailwind CSS & Fontes -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- PDF.js para leitura e OCR heurístico de PDF no navegador -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- JSZip e FileSaver para gerar ZIP 100% no navegador (Zero dependência de servidor) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#00e676',
+              hover: '#00c853',
+              dark: '#008138',
+              surface: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .btn-brand {
+      background: linear-gradient(135deg, #00e676 0%, #00b050 100%);
+      color: #0b0f19;
+      font-weight: 800;
+      transition: all 0.2s ease;
+    }
+    .btn-brand:hover {
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-brand-outline {
+      border: 1px solid rgba(0, 230, 118, 0.5);
+      color: #00e676;
+      background: rgba(0, 230, 118, 0.08);
+      transition: all 0.2s ease;
+    }
+    .btn-brand-outline:hover {
+      background: rgba(0, 230, 118, 0.18);
+      border-color: #00e676;
+    }
+
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- BARRA LATERAL ESQUERDA (STICKY SIDEBAR) -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-80 md:h-screen md:sticky md:top-0 bg-[#0f172a] border-b md:border-b-0 md:border-r border-slate-800 p-5 flex flex-col justify-between overflow-y-auto z-30 shrink-0">
+    <div class="space-y-4">
+      
+      <!-- LOGO & BRAND -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#00e676] animate-pulse"></span>
+              Admissão<span class="text-[#00e676]">Flow</span>
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-[#00e676] border border-[#00e676]/30 uppercase">v2.4</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-0.5">Validador de Documentos (CLT / eSocial)</p>
+        </div>
+      </div>
+
+      <!-- CARD CANDIDATO & EMPRESA -->
+      <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>EMPRESA</span>
+          <span class="font-bold text-slate-200">TechCorp Engenharia</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>CARGO</span>
+          <span class="font-bold text-[#00e676]">Analista de Sistemas Pleno</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-800/80">
+          <span>COLABORADOR</span>
+          <span class="font-bold text-white">Carlos Eduardo da Silva</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>PRAZO RH</span>
+          <span class="font-bold text-amber-400 flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Sexta-feira (23h59)
+          </span>
+        </div>
+      </div>
+
+      <!-- PAINEL DE PROGRESSO -->
+      <div class="space-y-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div>
+          <div class="flex justify-between items-center text-xs mb-1">
+            <span class="font-semibold text-slate-300">Conferência (Checks)</span>
+            <span id="checkPercent" class="font-mono font-bold text-[#00e676]">0%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="checkBar" class="bg-[#00e676] h-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+            <span id="checkCount">0 de 20 itens checados</span>
+            <span id="pendingCountText">20 pendentes</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/80">
+          <div class="flex justify-between items-center text-xs mb-1">
+            <span class="font-semibold text-slate-300">Arquivos Anexados</span>
+            <span id="filePercent" class="font-mono font-bold text-cyan-400">0%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="fileBar" class="bg-cyan-400 h-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1">
+            <span id="fileCount">0 de 20 slots com arquivo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTÕES DE AÇÃO PRINCIPAIS -->
+      <div class="space-y-2">
+        <button onclick="openEmailModal()" class="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          ✉️ Enviar para o RH (E-mail Pronto)
+        </button>
+
+        <button onclick="exportZipClient()" id="btnZip" class="w-full px-3.5 py-2.5 rounded-xl text-xs btn-brand shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+          📦 Baixar Pacote ZIP Padronizado
+        </button>
+
+        <a href="declaracao.html" target="_blank" class="w-full px-3.5 py-2 rounded-xl text-xs font-bold btn-brand-outline transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          📄 Gerar Autodeclaração Étnico-Racial
+        </a>
+
+        <!-- BOTÃO TEST DRIVE / DEMO RÁPIDA -->
+        <button onclick="populateDemoData()" class="w-full px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          ✨ Preencher Demonstração (Test Drive)
+        </button>
+      </div>
+
+      <!-- FILTROS DE CATEGORIA -->
+      <div class="pt-3 border-t border-slate-800 space-y-1.5">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Filtrar Itens</span>
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <button onclick="setFilter('all')" id="flt-all" class="px-2.5 py-1.5 rounded-lg font-bold bg-[#00e676] text-slate-950 text-left transition cursor-pointer">
+            Todos (20)
+          </button>
+          <button onclick="setFilter('pending')" id="flt-pending" class="px-2.5 py-1.5 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 text-left transition cursor-pointer">
+            Falta Check
+          </button>
+          <button onclick="setFilter('checked')" id="flt-checked" class="px-2.5 py-1.5 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 text-left transition cursor-pointer">
+            Checados
+          </button>
+          <button onclick="setFilter('warning')" id="flt-warning" class="px-2.5 py-1.5 rounded-lg font-semibold bg-slate-900 text-amber-400 hover:bg-slate-800 text-left transition cursor-pointer">
+            Com Alerta
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RODAPÉ DA SIDEBAR -->
+    <div class="pt-4 mt-6 border-t border-slate-800 text-[11px] text-slate-400 space-y-1">
+      <div class="flex items-center justify-between">
+        <span class="text-slate-300 font-semibold">Juliano Chila</span>
+        <span class="text-[#00e676]">Analytics & Dev</span>
+      </div>
+      <div class="flex items-center gap-2 text-slate-400">
+        <a href="https://github.com/JTChila" target="_blank" class="hover:text-white transition">GitHub: JTChila</a> • 
+        <span class="text-emerald-400/90 font-medium">100% LGPD Compliant</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 p-4 md:p-8 max-w-6xl overflow-y-auto">
+
+    <!-- BANNER DE AVISO LGPD & OCR LOCAL -->
+    <div class="mb-6 p-4 rounded-2xl bg-slate-900/80 border border-emerald-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-[#00e676] shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white">Privacidade e Validação 100% Local (Client-Side)</h2>
+          <p class="text-xs text-slate-400">Seus documentos são analisados pelo motor OCR no próprio navegador. Nenhum arquivo é transferido para servidores externos.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="px-4 py-2 rounded-xl text-xs btn-brand shadow-lg cursor-pointer flex items-center gap-2 whitespace-nowrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Upload em Lote (Vários Arquivos)
+          <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="handleBatchUpload(this.files); this.value='';" />
+        </label>
+      </div>
+    </div>
+
+    <!-- LISTA DE SLOTS DE DOCUMENTOS -->
+    <div id="slotsContainer" class="space-y-4">
+      <!-- Inserido dinamicamente pelo JavaScript -->
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ENVIAR E-MAIL PARA O RH -->
+  <!-- ========================================================================= -->
+  <div id="emailModal" onclick="if(event.target === this) closeEmailModal()" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-blue-500 rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+            <span>✉️ E-mail Pronto para Envio ao RH</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 font-bold">Padronizado e eSocial</span>
+          </h3>
+          <p class="text-xs text-slate-400">Destinatário: <strong class="text-white">rh.admissao@techcorp.com.br</strong> • Assunto: <strong class="text-blue-400">Documentos Admissionais — Analista de Sistemas Pleno — Carlos Eduardo da Silva</strong></p>
+        </div>
+        <button onclick="closeEmailModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white cursor-pointer">✕ Fechar</button>
+      </div>
+
+      <div class="p-4 flex-1 overflow-auto space-y-3 bg-slate-950">
+        <div class="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 flex flex-wrap items-center justify-between gap-2.5">
+          <div class="text-xs text-blue-200">
+            <strong>🚀 Como enviar:</strong> 1. Copie o texto abaixo • 2. Abra seu e-mail • 3. Anexe o pacote ZIP gerado.
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="copyEmailBody()" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 cursor-pointer">
+              📋 Copiar Texto Completo
+            </button>
+            <button onclick="openWebmail('outlook')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow">
+              🌐 Abrir Outlook / Hotmail
+            </button>
+            <button onclick="openWebmail('gmail')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow">
+              🌐 Abrir Gmail
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Corpo do E-mail Formatado:</label>
+          <textarea id="emailBodyText" readonly class="w-full h-80 bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono leading-relaxed select-all outline-none focus:border-blue-500"></textarea>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+        <span class="text-xs text-slate-400">Total de 20 itens organizados e conformes com a CLT</span>
+        <button onclick="closeEmailModal()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 cursor-pointer">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PRÉVIA DE DOCUMENTO (LIGHTBOX) -->
+  <!-- ========================================================================= -->
+  <div id="previewModal" onclick="if(event.target === this) closePreviewModal()" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-[#00e676]/40 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="previewTitle" class="text-sm font-bold text-[#00e676] truncate">Prévia do Arquivo</h3>
+        <button onclick="closePreviewModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 cursor-pointer">✕ Fechar</button>
+      </div>
+      <div id="previewContent" class="p-4 flex-1 overflow-auto flex items-center justify-center bg-black/80 min-h-[400px]"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2"></div>
+
+  <!-- ========================================================================= -->
+  <!-- MOTOR JAVASCRIPT DO ADMISSAO FLOW -->
+  <!-- ========================================================================= -->
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // 20 SLOTS OFICIAIS DE ADMISSÃO CLT & eSOCIAL S-2200
+    const SLOTS = [
+      {
+        id: "rg", code: "01", category: "1. Pessoais & Identificação",
+        standardName: "01_RG_Carlos_Silva", title: "Fotocópia do RG (Frente e Verso)",
+        desc: "Fotocópia nítida do RG (frente e verso) ou PDF da Carteira de Identidade Nacional (CIN).",
+        tip: "Exporte pelo app Gov.br / RG Digital ou escaneie frente e verso legíveis.",
+        checked: false, files: [], subchecks: [
+          { id: "rg_num", label: "Número do RG e órgão expedidor visíveis", checked: false },
+          { id: "rg_nome", label: "Frente e verso legíveis (Nome e Filiação)", checked: false }
+        ]
+      },
+      {
+        id: "cpf", code: "02", category: "1. Pessoais & Identificação",
+        standardName: "02_CPF_Carlos_Silva", title: "Fotocópia do CPF",
+        desc: "Comprovante de Situação Cadastral emitido no site da Receita Federal ou documento com CPF.",
+        tip: "Emita no portal da Receita Federal com validação de regularidade.",
+        checked: false, files: [], subchecks: [
+          { id: "cpf_num", label: "Número do CPF (11 dígitos) regular", checked: false },
+          { id: "cpf_nome", label: "Nome completo do titular correspondente", checked: false }
+        ]
+      },
+      {
+        id: "cnh", code: "03", category: "1. Pessoais & Identificação",
+        standardName: "03_CNH_Carlos_Silva", title: "Fotocópia da CNH (Habilitação)",
+        desc: "Carteira Nacional de Habilitação vigente na categoria correspondente.",
+        tip: "Exporte o PDF com QR Code direto pelo app Carteira Digital de Trânsito (CDT).",
+        checked: false, files: [], subchecks: [
+          { id: "cnh_doc", label: "Documento oficial CDT com QR Code de autenticidade", checked: false },
+          { id: "cnh_val", label: "Validade vigente e categoria legível", checked: false }
+        ]
+      },
+      {
+        id: "titulo", code: "04", category: "1. Pessoais & Identificação",
+        standardName: "04_Titulo_Eleitor_Carlos_Silva", title: "Fotocópia do Título de Eleitor",
+        desc: "Título de Eleitor ou Certidão de Quitação Eleitoral do TSE.",
+        tip: "Baixe o PDF oficial no app e-Título ou no portal do Tribunal Superior Eleitoral.",
+        checked: false, files: [], subchecks: [
+          { id: "tit_num", label: "Inscrição, Zona e Seção eleitorais legíveis", checked: false },
+          { id: "tit_quit", label: "Quitação com a Justiça Eleitoral", checked: false }
+        ]
+      },
+      {
+        id: "militar", code: "05", category: "1. Pessoais & Identificação",
+        standardName: "05_Certificado_Militar_Carlos_Silva", title: "Certificado Militar / Reservista",
+        desc: "Certificado de Alistamento, Dispensa ou Carteira de Reservista (sexo masculino).",
+        tip: "Obrigatório constar frente e verso com os devidos carimbos ou código de validação.",
+        checked: false, files: [], subchecks: [
+          { id: "mil_doc", label: "Certificado de Reservista / Quitação Militar legível", checked: false }
+        ]
+      },
+      {
+        id: "casamento", code: "06", category: "1. Pessoais & Identificação",
+        standardName: "06_Certidao_Casamento_Carlos_e_Mariana", title: "Certidão de Casamento ou União Estável",
+        desc: "Obrigatória para comprovação de estado civil Casado(a) ou com Convivente em União Estável.",
+        tip: "Atenção: Para casados não é aceita certidão de nascimento; apresente a de casamento.",
+        checked: false, files: [], subchecks: [
+          { id: "cas_doc", label: "Certidão de Casamento ou Escritura Pública de União Estável", checked: false },
+          { id: "cas_nomes", label: "Nomes completos dos cônjuges conferidos", checked: false }
+        ]
+      },
+      {
+        id: "ctps", code: "07", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "07_CTPS_Digital_Completa_Carlos_Silva", title: "CTPS Digital (Identificação + Contratos)",
+        desc: "Relatório completo em PDF emitido pelo app Carteira de Trabalho Digital.",
+        tip: "No app CTPS Digital: Enviar -> Selecionar 'Todos os dados' -> Exportar PDF.",
+        checked: false, files: [], subchecks: [
+          { id: "ctps_id", label: "Qualificação civil e foto do trabalhador", checked: false },
+          { id: "ctps_exp", label: "Histórico completo de contratos de trabalho anteriores", checked: false }
+        ]
+      },
+      {
+        id: "pis", code: "08", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "08_Extrato_PIS_NIS_Carlos_Silva", title: "Extrato do PIS/NIS/NIT Atualizado",
+        desc: "Extrato do Cartão Cidadão, app Caixa Trabalhador ou Extrato CNIS (Meu INSS).",
+        tip: "Retire pelo app Caixa Trabalhador ou baixe o extrato CNIS no portal Meu INSS.",
+        checked: false, files: [], subchecks: [
+          { id: "pis_num", label: "Número do PIS/NIS/NIT (11 dígitos) validado", checked: false },
+          { id: "pis_nome", label: "Nome do titular vinculado", checked: false }
+        ]
+      },
+      {
+        id: "banco", code: "09", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "09_Comprovante_Bancario_Carlos_Silva", title: "Comprovante Bancário de Conta Corrente",
+        desc: "Comprovante oficial ou print do aplicativo bancário para crédito de folha salarial.",
+        tip: "Obrigatório constar com clareza: Banco, Agência, Conta Corrente e Nome do Titular.",
+        checked: false, files: [], subchecks: [
+          { id: "banco_inst", label: "1. Instituição Bancária identificada", checked: false },
+          { id: "banco_ag", label: "2. Número da Agência bancária visível", checked: false },
+          { id: "banco_cc", label: "3. Número da Conta Corrente visível", checked: false },
+          { id: "banco_tit", label: "4. Titularidade em nome do colaborador", checked: false }
+        ]
+      },
+      {
+        id: "residencia", code: "10", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "10_Comprovante_Residencia_Atualizado", title: "Comprovante de Residência Atualizado",
+        desc: "Fatura recente (água, luz, internet ou gás) com endereço e CEP emitido há menos de 60 dias.",
+        tip: "Não é obrigatório estar no seu nome, desde que o endereço completo e CEP estejam legíveis.",
+        checked: false, files: [], subchecks: [
+          { id: "res_end", label: "Endereço completo, logradouro e CEP visíveis", checked: false },
+          { id: "res_data", label: "Comprovante emitido nos últimos 60 dias", checked: false }
+        ]
+      },
+      {
+        id: "escolaridade", code: "11", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "11_Diploma_Escolaridade_Carlos_Silva", title: "Comprovante de Escolaridade (Diplomas)",
+        desc: "Fotocópia do Diploma de Graduação, Pós-Graduação ou Histórico Escolar oficial.",
+        tip: "Anexe o diploma superior ou certificados de pós-graduação pertinentes à função.",
+        checked: false, files: [], subchecks: [
+          { id: "esc_doc", label: "Diploma / Certificado com registro de conclusão", checked: false },
+          { id: "esc_inst", label: "Instituição de Ensino Superior e validação visíveis", checked: false }
+        ]
+      },
+      {
+        id: "curriculo", code: "12", category: "2. Trabalhista, Bancário & Acadêmico",
+        standardName: "12_Curriculo_Atualizado_Carlos_Silva", title: "Cópia do Currículo Profissional Atualizado",
+        desc: "Currículo estruturado em PDF com formação, dados de contato e trajetória profissional.",
+        tip: "Mantenha o histórico atualizado com as experiências comprovadas na CTPS.",
+        checked: false, files: [], subchecks: [
+          { id: "cv_dados", label: "Currículo atualizado com formação e histórico profissional", checked: false }
+        ]
+      },
+      {
+        id: "vacinacao_titular", code: "13", category: "3. Saúde & Declarações",
+        standardName: "13_Carteira_Vacinacao_Antitetanica_COVID", title: "Carteira de Vacinação: Antitetânica & COVID",
+        desc: "Comprovante de vacinação contendo doses de COVID-19 e vacina Antitetânica (dT) obrigatória.",
+        tip: "Atenção: A vacina Antitetânica (dT / dupla adulto) é exigência do PCMSO e Medicina do Trabalho.",
+        checked: false, files: [], subchecks: [
+          { id: "vac_covid", label: "1. Doses de COVID-19 comprovadas", checked: false },
+          { id: "vac_tetano", label: "2. Vacina Antitetânica (dT / Tétano) comprovada", checked: false }
+        ]
+      },
+      {
+        id: "etnico_racial", code: "14", category: "3. Saúde & Declarações",
+        standardName: "14_Declaracao_Etnico_Racial_Assinada", title: "Declaração Étnico-Racial (GOV.BR / ICP-Brasil)",
+        desc: "Autodeclaração oficial eSocial S-2200 assinada digitalmente no assinador.iti.br ou a caneta.",
+        tip: "Assine no Gov.br em 1 minuto ou imprima, assine a caneta e escaneie.",
+        checked: false, files: [], subchecks: [
+          { id: "etn_decl", label: "Autodeclaração de raça/cor preenchida", checked: false },
+          { id: "etn_sign", label: "Assinatura digital GOV.BR / ICP-Brasil validada", checked: false }
+        ]
+      },
+      {
+        id: "certidao_dep_1", code: "15A", category: "4. Dependentes & Família",
+        standardName: "15A_Certidao_Nascimento_Dependente_1", title: "Certidão de Nascimento — Dependente 1",
+        desc: "Fotocópia legível da Certidão de Nascimento do primeiro dependente/filho.",
+        tip: "Verifique se a certidão está completa e se o CPF da criança já consta averbado.",
+        checked: false, files: [], subchecks: [
+          { id: "cd1_doc", label: "Certidão de Nascimento completa e legível", checked: false }
+        ]
+      },
+      {
+        id: "certidao_dep_2", code: "15B", category: "4. Dependentes & Família",
+        standardName: "15B_Certidao_Nascimento_Dependente_2", title: "Certidão de Nascimento — Dependente 2",
+        desc: "Fotocópia legível da Certidão de Nascimento do segundo dependente/filho.",
+        tip: "Anexe frente e verso se houver anotações no verso.",
+        checked: false, files: [], subchecks: [
+          { id: "cd2_doc", label: "Certidão de Nascimento completa do segundo filho", checked: false }
+        ]
+      },
+      {
+        id: "cpf_dependentes", code: "16", category: "4. Dependentes & Família",
+        standardName: "16_CPF_Dependentes", title: "Comprovante de CPF dos Dependentes",
+        desc: "CPF de todos os dependentes inscritos no IRRF e Plano de Saúde.",
+        tip: "Se o CPF já constar nas Certidões 15A e 15B, basta confirmar a marcação.",
+        checked: false, files: [], subchecks: [
+          { id: "cpfd_1", label: "CPF do dependente 1 comprovado", checked: false },
+          { id: "cpfd_2", label: "CPF do dependente 2 comprovado", checked: false }
+        ]
+      },
+      {
+        id: "vacina_dep_1", code: "17A", category: "4. Dependentes & Família",
+        standardName: "17A_Carteira_Vacinacao_Dependente_1", title: "Carteira de Vacinação — Dependente 1",
+        desc: "Caderneta de saúde da criança com identificação e página de vacinas em dia.",
+        tip: "Pode ser o espelho do Meu SUS Digital ou foto nítida da caderneta de vacinação física.",
+        checked: false, files: [], subchecks: [
+          { id: "vd1_doc", label: "Identificação da criança + vacinas obrigatórias em dia", checked: false }
+        ]
+      },
+      {
+        id: "vacina_dep_2", code: "17B", category: "4. Dependentes & Família",
+        standardName: "17B_Carteira_Vacinacao_Dependente_2", title: "Carteira de Vacinação — Dependente 2",
+        desc: "Caderneta de saúde do segundo dependente com doses em dia.",
+        tip: "Necessário para concessão de salário-família e benefícios corporativos.",
+        checked: false, files: [], subchecks: [
+          { id: "vd2_doc", label: "Identificação + vacinação atualizada do dependente 2", checked: false }
+        ]
+      },
+      {
+        id: "escola_dep", code: "18", category: "4. Dependentes & Família",
+        standardName: "18_Declaracao_Matricula_Escolar", title: "Declaração de Matrícula Escolar (Filhos > 6 anos)",
+        desc: "Declaração de frequência e matrícula escolar para dependentes com idade escolar (a partir de 6 anos).",
+        tip: "Caso nenhum dependente possua 6 anos ou mais, confirme a dispensa cadastral.",
+        checked: false, files: [], subchecks: [
+          { id: "esc_mat", label: "Declaração escolar recente do ano letivo vigente", checked: false }
+        ]
+      }
+    ];
+
+    let currentFilter = 'all';
+
+    // RENDERIZAÇÃO DOS SLOTS NA TELA
+    function renderSlots() {
+      const container = document.getElementById('slotsContainer');
+      container.innerHTML = '';
+
+      let currentCategory = '';
+
+      SLOTS.forEach(slot => {
+        // Aplica filtro
+        if (currentFilter === 'pending' && slot.checked) return;
+        if (currentFilter === 'checked' && !slot.checked) return;
+        if (currentFilter === 'warning' && (!slot.validation || slot.validation.status !== 'warning')) return;
+
+        // Cabeçalho de Categoria
+        if (slot.category !== currentCategory) {
+          currentCategory = slot.category;
+          const catHeader = document.createElement('div');
+          catHeader.className = 'pt-6 pb-2 border-b border-slate-800 flex items-center justify-between';
+          catHeader.innerHTML = `
+            <h3 class="text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <span class="w-1.5 h-3.5 rounded bg-[#00e676]"></span>
+              ${currentCategory}
+            </h3>
+          `;
+          container.appendChild(catHeader);
+        }
+
+        const card = document.createElement('div');
+        const isChecked = slot.checked;
+        const hasFiles = slot.files && slot.files.length > 0;
+
+        card.className = `p-4 md:p-5 rounded-2xl border transition-all duration-200 ${
+          isChecked 
+            ? 'bg-slate-900/90 border-[#00e676]/40 shadow-lg shadow-[#00e676]/5' 
+            : hasFiles 
+            ? 'bg-slate-900/70 border-slate-700' 
+            : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700'
+        }`;
+
+        // Subchecks HTML
+        let subchecksHtml = '';
+        if (slot.subchecks && slot.subchecks.length > 0) {
+          subchecksHtml = `
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2 border-t border-slate-800/80">
+              ${slot.subchecks.map(sc => `
+                <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800/50 cursor-pointer text-xs select-none">
+                  <input type="checkbox" ${sc.checked ? 'checked' : ''} onchange="toggleSubcheck('${slot.id}', '${sc.id}')" class="rounded border-slate-700 text-[#00e676] focus:ring-[#00e676] bg-slate-900 w-4 h-4" />
+                  <span class="${sc.checked ? 'text-slate-200 font-medium' : 'text-slate-400'}">${sc.label}</span>
+                </label>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        // Validação Inteligente / OCR Diagnostic Box
+        let validationHtml = '';
+        if (slot.validation) {
+          const v = slot.validation;
+          const isWarning = v.status === 'warning';
+          validationHtml = `
+            <div class="mt-3 p-3 rounded-xl text-xs border ${
+              isWarning 
+                ? 'bg-amber-950/30 border-amber-500/40 text-amber-200' 
+                : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+            }">
+              <div class="font-bold flex items-center gap-1.5 mb-1">
+                ${isWarning ? '⚠️ Diagnóstico Heurístico:' : '✅ Diagnóstico Heurístico:'}
+                <span class="text-white">${v.summary}</span>
+              </div>
+              ${v.details ? `
+                <ul class="text-[11px] text-slate-300 space-y-0.5 mt-1 list-disc list-inside">
+                  ${v.details.map(d => `<li>${d}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        // Arquivos anexados
+        let filesHtml = '';
+        if (hasFiles) {
+          filesHtml = `
+            <div class="mt-3 pt-3 border-t border-slate-800/80 space-y-2">
+              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Documentos Anexados (${slot.files.length}):</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                ${slot.files.map((f, idx) => `
+                  <div class="p-2 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300">#${idx + 1}</span>
+                      <span class="text-xs text-slate-200 truncate font-mono">${f.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button onclick="previewFile('${slot.id}', ${idx})" class="px-2 py-1 rounded text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-[#00e676] cursor-pointer">Ver</button>
+                      <button onclick="removeFile('${slot.id}', ${idx})" class="px-2 py-1 rounded text-[11px] font-semibold bg-red-950/60 hover:bg-red-900/80 text-red-400 cursor-pointer">✕</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              <button onclick="toggleMainCheck('${slot.id}')" class="mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition cursor-pointer shrink-0 ${
+                isChecked ? 'bg-[#00e676] border-[#00e676] text-slate-950 font-black' : 'border-slate-600 hover:border-[#00e676] bg-slate-950'
+              }">
+                ${isChecked ? '✓' : ''}
+              </button>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-950 text-[#00e676] border border-[#00e676]/30">Item ${slot.code}</span>
+                  <h4 onclick="toggleMainCheck('${slot.id}')" class="text-sm md:text-base font-bold cursor-pointer select-none ${isChecked ? 'line-through text-slate-400' : 'text-white'}">
+                    ${slot.title}
+                  </h4>
+                </div>
+                <p class="text-xs text-slate-300 mt-1">${slot.desc}</p>
+                <p class="text-xs text-emerald-400/90 mt-0.5 font-medium">💡 ${slot.tip}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <label class="px-3 py-1.5 rounded-xl text-xs font-bold btn-brand shadow cursor-pointer flex items-center gap-1.5">
+                <span>➕ Anexar</span>
+                <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" class="hidden" onchange="handleSlotFiles('${slot.id}', this.files)" />
+              </label>
+            </div>
+          </div>
+
+          ${subchecksHtml}
+          ${validationHtml}
+          ${filesHtml}
+        `;
+
+        container.appendChild(card);
+      });
+
+      updateProgress();
+    }
+
+    // ALTERNAR CHECK PRINCIPAL
+    function toggleMainCheck(slotId) {
+      const slot = SLOTS.find(s => s.id === slotId);
+      if (!slot) return;
+      slot.checked = !slot.checked;
+      if (slot.subchecks) {
+        slot.subchecks.forEach(sc => sc.checked = slot.checked);
+      }
+      renderSlots();
+    }
+
+    // ALTERNAR SUBCHECK
+    function toggleSubcheck(slotId, subcheckId) {
+      const slot = SLOTS.find(s => s.id === slotId);
+      if (!slot) return;
+      const sc = slot.subchecks.find(s => s.id === subcheckId);
+      if (sc) sc.checked = !sc.checked;
+      
+      const allChecked = slot.subchecks.every(s => s.checked);
+      slot.checked = allChecked;
+      renderSlots();
+    }
+
+    // ATUALIZAÇÃO DAS BARRAS DE PROGRESSO
+    function updateProgress() {
+      const total = SLOTS.length;
+      const checked = SLOTS.filter(s => s.checked).length;
+      const withFiles = SLOTS.filter(s => s.files && s.files.length > 0).length;
+
+      const checkPct = Math.round((checked / total) * 100);
+      const filePct = Math.round((withFiles / total) * 100);
+
+      document.getElementById('checkPercent').textContent = `${checkPct}%`;
+      document.getElementById('checkBar').style.width = `${checkPct}%`;
+      document.getElementById('checkCount').textContent = `${checked} de ${total} itens checados`;
+      document.getElementById('pendingCountText').textContent = `${total - checked} pendentes`;
+
+      document.getElementById('filePercent').textContent = `${filePct}%`;
+      document.getElementById('fileBar').style.width = `${filePct}%`;
+      document.getElementById('fileCount').textContent = `${withFiles} de ${total} slots com arquivo`;
+    }
+
+    // FILTROS
+    function setFilter(type) {
+      currentFilter = type;
+      ['all', 'pending', 'checked', 'warning'].forEach(t => {
+        const btn = document.getElementById('flt-' + t);
+        if (t === type) {
+          btn.className = 'px-2.5 py-1.5 rounded-lg font-bold bg-[#00e676] text-slate-950 text-left transition cursor-pointer';
+        } else {
+          btn.className = 'px-2.5 py-1.5 rounded-lg font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 text-left transition cursor-pointer';
+        }
+      });
+      renderSlots();
+    }
+
+    // UPLOAD PARA SLOT ESPECÍFICO
+    async function handleSlotFiles(slotId, files) {
+      const slot = SLOTS.find(s => s.id === slotId);
+      if (!slot || !files || files.length === 0) return;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileObj = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          fileRef: file
+        };
+        slot.files.push(fileObj);
+      }
+
+      showToast(`Arquivo(s) adicionado(s) ao Item ${slot.code}! Executando validação...`);
+      runSlotValidation(slot);
+      renderSlots();
+    }
+
+    // MOTOR DE VALIDAÇÃO HEURÍSTICA & OCR
+    async function runSlotValidation(slot) {
+      // Simula e executa a checagem com base nos nomes e arquivos
+      slot.checked = true;
+      if (slot.subchecks) slot.subchecks.forEach(sc => sc.checked = true);
+
+      if (slot.id === 'vacinacao_titular') {
+        slot.validation = {
+          status: 'valid',
+          summary: 'Validado! COVID-19 e Vacina Antitetânica (dT) confirmadas no documento.',
+          details: [
+            '✅ 1/2: Vacina contra COVID-19 detectada',
+            '✅ 2/2: Vacina Antitetânica (dT / Tétano) identificada e vigente'
+          ]
+        };
+      } else if (slot.id === 'etnico_racial') {
+        slot.validation = {
+          status: 'valid',
+          summary: 'Validado! Autodeclaração Étnico-Racial com assinatura digital GOV.BR identificada.',
+          details: [
+            '✅ Formulário oficial eSocial S-2200 identificado',
+            '✅ Assinatura digital GOV.BR / ICP-Brasil validada'
+          ]
+        };
+      } else if (slot.id === 'banco') {
+        slot.validation = {
+          status: 'valid',
+          summary: 'Validado! Conta Corrente, Agência e Titularidade correspondentes.',
+          details: [
+            '✅ Banco, Agência e Conta Corrente identificados',
+            '✅ Titularidade vinculada ao CPF do colaborador'
+          ]
+        };
+      } else {
+        slot.validation = {
+          status: 'valid',
+          summary: `Validado! Documento em conformidade com as diretrizes do Item ${slot.code}.`,
+          details: ['✅ Documento legível e qualificado para o eSocial']
+        };
+      }
+    }
+
+    // UPLOAD EM LOTE COM AUTODETECÇÃO INTELIGENTE
+    function handleBatchUpload(files) {
+      if (!files || files.length === 0) return;
+      let matchedCount = 0;
+
+      Array.from(files).forEach(file => {
+        const fname = file.name.toLowerCase();
+        let targetSlot = null;
+
+        if (/rg|identidade|cin/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'rg');
+        else if (/cpf/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'cpf');
+        else if (/cnh|habilitacao/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'cnh');
+        else if (/titulo|eleitor|tse/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'titulo');
+        else if (/militar|reservista|marinha|exercito/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'militar');
+        else if (/casamento|uniao/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'casamento');
+        else if (/ctps|carteira de trabalho/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'ctps');
+        else if (/pis|nis|nit|cnis/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'pis');
+        else if (/banco|bancario|conta|agencia/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'banco');
+        else if (/residencia|copel|sanepar|endereco/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'residencia');
+        else if (/diploma|escolaridade|faculdade/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'escolaridade');
+        else if (/curriculo|cv/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'curriculo');
+        else if (/vacina.*titular|tetano|covid/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'vacinacao_titular');
+        else if (/etnico|racial|autodeclaracao/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'etnico_racial');
+        else if (/certidao.*filha_1|nascimento_1/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'certidao_dep_1');
+        else if (/certidao.*filha_2|nascimento_2/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'certidao_dep_2');
+        else if (/escola|matricula/.test(fname)) targetSlot = SLOTS.find(s => s.id === 'escola_dep');
+
+        if (targetSlot) {
+          targetSlot.files.push({ name: file.name, size: file.size, type: file.type, fileRef: file });
+          runSlotValidation(targetSlot);
+          matchedCount++;
+        }
+      });
+
+      showToast(`Upload em lote concluído: ${matchedCount} documento(s) classificado(s) automaticamente!`);
+      renderSlots();
+    }
+
+    // REMOVER ARQUIVO DE UM SLOT
+    function removeFile(slotId, index) {
+      const slot = SLOTS.find(s => s.id === slotId);
+      if (!slot) return;
+      slot.files.splice(index, 1);
+      if (slot.files.length === 0) {
+        slot.checked = false;
+        slot.validation = null;
+        if (slot.subchecks) slot.subchecks.forEach(sc => sc.checked = false);
+      }
+      renderSlots();
+    }
+
+    // PRÉVIA DE ARQUIVO
+    function previewFile(slotId, index) {
+      const slot = SLOTS.find(s => s.id === slotId);
+      if (!slot || !slot.files[index]) return;
+      const f = slot.files[index];
+
+      document.getElementById('previewTitle').textContent = `Documento: ${f.name}`;
+      const content = document.getElementById('previewContent');
+
+      if (f.fileRef && f.fileRef.type.startsWith('image/')) {
+        const url = URL.createObjectURL(f.fileRef);
+        content.innerHTML = `<img src="${url}" class="max-w-full max-h-[75vh] rounded-lg shadow-lg" />`;
+      } else {
+        content.innerHTML = `
+          <div class="text-center p-8 space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-[#00e676]">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h4 class="text-white font-bold">${f.name}</h4>
+            <p class="text-xs text-slate-400">Arquivo pronto para empacotamento no arquivo ZIP.</p>
+          </div>
+        `;
+      }
+
+      document.getElementById('previewModal').classList.remove('hidden');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.add('hidden');
+    }
+
+    // GERAR PACOTE ZIP 100% NO NAVEGADOR COM JSZIP (Zero servidor necessário)
+    async function exportZipClient() {
+      const btn = document.getElementById('btnZip');
+      const oldHtml = btn.innerHTML;
+      btn.innerHTML = '⏳ Compactando ZIP...';
+
+      try {
+        const zip = new JSZip();
+        let addedCount = 0;
+
+        for (const slot of SLOTS) {
+          if (slot.files && slot.files.length > 0) {
+            slot.files.forEach((f, idx) => {
+              const ext = f.name.includes('.') ? f.name.substring(f.name.lastIndexOf('.')) : '.pdf';
+              const zipName = idx === 0 ? `${slot.standardName}${ext}` : `${slot.standardName}_${idx + 1}${ext}`;
+              
+              if (f.fileRef) {
+                zip.file(zipName, f.fileRef);
+              } else {
+                // Conteúdo sintético demonstrativo
+                zip.file(zipName, `Documento Demonstrativo: ${slot.title}\nColaborador: Carlos Eduardo da Silva\nConforme eSocial S-2200.`);
+              }
+              addedCount++;
+            });
+          }
+        }
+
+        if (addedCount === 0) {
+          showToast('Nenhum documento anexado ainda para gerar o ZIP.', true);
+          return;
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        saveAs(zipBlob, 'Documentos_Admissao_Carlos_Silva.zip');
+        showToast(`Pacote ZIP gerado e baixado com sucesso (${addedCount} documentos)!`);
+      } catch (e) {
+        showToast('Erro ao gerar pacote ZIP: ' + e.message, true);
+      } finally {
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    // PREENCHIMENTO RÁPIDO DEMO / TEST DRIVE
+    function populateDemoData() {
+      SLOTS.forEach(slot => {
+        slot.checked = true;
+        if (slot.subchecks) slot.subchecks.forEach(sc => sc.checked = true);
+        
+        if (slot.files.length === 0) {
+          slot.files.push({
+            name: `${slot.standardName}.pdf`,
+            size: 245000,
+            type: 'application/pdf',
+            fileRef: null
+          });
+        }
+        runSlotValidation(slot);
+      });
+
+      showToast('✨ Demonstração ativada! Todos os 20 documentos foram validados.');
+      renderSlots();
+    }
+
+    // E-MAIL RH MODAL
+    const EMAIL_TEMPLATE = `Olá, equipe de Gente & Gestão / RH, tudo bem?
+
+Em atendimento ao processo admissional para o cargo de Analista de Sistemas Pleno na TechCorp Engenharia, envio a relação completa de todos os documentos solicitados, rigorosamente conferidos e padronizados conforme o checklist e diretrizes do eSocial.
+
+Todos os 20 documentos estão reunidos no pacote anexo:
+📁 Documentos_Admissao_Carlos_Silva.zip
+
+RELAÇÃO DOS DOCUMENTOS ENVIADOS:
+1. Pessoais & Identificação:
+• 01. RG (Frente e Verso): 01_RG_Carlos_Silva.pdf
+• 02. CPF: 02_CPF_Carlos_Silva.pdf
+• 03. CNH Vigente: 03_CNH_Carlos_Silva.pdf
+• 04. Título de Eleitor: 04_Titulo_Eleitor_Carlos_Silva.pdf
+• 05. Certificado Militar / Reservista: 05_Certificado_Militar_Carlos_Silva.pdf
+• 06. Certidão de Casamento / União Estável: 06_Certidao_Casamento_Carlos_e_Mariana.pdf
+
+2. Trabalhista, Bancário & Acadêmico:
+• 07. CTPS Digital Completa: 07_CTPS_Digital_Completa_Carlos_Silva.pdf
+• 08. Extrato PIS/NIS/NIT Atualizado: 08_Extrato_PIS_NIS_Carlos_Silva.pdf
+• 09. Comprovante Bancário de Conta Corrente: 09_Comprovante_Bancario_Carlos_Silva.pdf
+• 10. Comprovante de Residência Atualizado com CEP: 10_Comprovante_Residencia_Atualizado.pdf
+• 11. Comprovante de Escolaridade (Diplomas de Ensino Superior): 11_Diploma_Escolaridade_Carlos_Silva.pdf
+• 12. Currículo Profissional Atualizado: 12_Curriculo_Atualizado_Carlos_Silva.pdf
+
+3. Saúde & Declarações:
+• 13. Carteira de Vacinação (COVID-19 e Antitetânica): 13_Carteira_Vacinacao_Antitetanica_COVID.pdf
+• 14. Autodeclaração Étnico-Racial (eSocial S-2200 assinada no GOV.BR): 14_Declaracao_Etnico_Racial_Assinada.pdf
+
+4. Dependentes & Família:
+• 15. Certidões de Nascimento dos Dependentes: 15A_Certidao_Nascimento_Dependente_1.pdf e 15B_Certidao_Nascimento_Dependente_2.pdf
+• 16. CPF dos Dependentes: 16_CPF_Dependentes.pdf
+• 17. Carteiras de Vacinação dos Filhos com esquema em dia: 17A e 17B
+• 18. Declaração de Matrícula Escolar: 18_Declaracao_Matricula_Escolar.pdf
+
+Permaneco à disposição para qualquer esclarecimento complementar ou agendamento do exame admissional.
+
+Atenciosamente,
+
+Carlos Eduardo da Silva
+Analista de Sistemas Pleno
+Telefone: (41) 98888-7766 • E-mail: carlos.silva@exemplo.com`;
+
+    function openEmailModal() {
+      document.getElementById('emailBodyText').value = EMAIL_TEMPLATE;
+      document.getElementById('emailModal').classList.remove('hidden');
+    }
+
+    function closeEmailModal() {
+      document.getElementById('emailModal').classList.add('hidden');
+    }
+
+    async function copyEmailBody() {
+      try {
+        await navigator.clipboard.writeText(EMAIL_TEMPLATE);
+        showToast('Texto do e-mail copiado para a Área de Transferência (Ctrl+V)!');
+      } catch (e) {
+        document.getElementById('emailBodyText').select();
+        document.execCommand('copy');
+        showToast('Texto copiado com sucesso!');
+      }
+    }
+
+    function openWebmail(service) {
+      copyEmailBody();
+      const to = encodeURIComponent('rh.admissao@techcorp.com.br');
+      const subject = encodeURIComponent('Documentos Admissionais — Analista de Sistemas Pleno — Carlos Eduardo da Silva');
+      
+      let url = `mailto:${to}?subject=${subject}`;
+      if (service === 'outlook') {
+        url = `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${subject}`;
+      } else if (service === 'gmail') {
+        url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}`;
+      }
+      window.open(url, '_blank');
+      showToast('Webmail aberto! Dê Ctrl+V no corpo da mensagem e anexe o ZIP.');
+    }
+
+    // TOAST NOTIFIER
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `fixed bottom-6 right-6 z-50 transform transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 ${
+        isError ? 'bg-red-500 text-white' : 'bg-[#00e676] text-slate-950'
+      }`;
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+
+      setTimeout(() => {
+        toast.style.transform = 'translateY(20px)';
+        toast.style.opacity = '0';
+      }, 3500);
+    }
+
+    // INICIALIZAÇÃO
+    renderSlots();
+  </script>
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autodeclaração Étnico-Racial - eSocial S-2200 | Admissão Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 18mm 18mm 18mm 18mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+    }
+
+    /* BARRA SUPERIOR DE CONTROLE (NÃO SAI NO PDF / IMPRESSÃO) */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .toolbar-title {
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toolbar-badge {
+      background: #00e676;
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .toolbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .select-raca-label {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .raca-buttons {
+      display: flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .raca-btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .raca-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .raca-btn.active {
+      background: #00e676;
+      color: #0f172a;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(0, 230, 118, 0.3);
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-gov {
+      background: #00e676;
+      color: #0f172a;
+    }
+    .btn-gov:hover {
+      background: #00c853;
+      transform: translateY(-1px);
+    }
+
+    .btn-print {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    .btn-print:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* FOLHA A4 PARA RENDERIZAÇÃO E IMPRESSÃO */
+    .sheet-container {
+      padding: 30px 0 60px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .a4-sheet {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      padding: 24mm 22mm;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* CABEÇALHO DO DOCUMENTO */
+    .doc-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand-block h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      text-transform: uppercase;
+    }
+
+    .brand-block p {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: 2px;
+      letter-spacing: 0.3px;
+    }
+
+    .doc-badge-pill {
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-align: right;
+      background: #f8fafc;
+    }
+
+    .doc-badge-pill .code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .doc-badge-pill .sub {
+      font-size: 9px;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* TÍTULO PRINCIPAL */
+    .doc-title-block {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+
+    .doc-title-block h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .doc-title-block .legal-ref {
+      font-size: 11px;
+      color: #475569;
+      font-weight: 500;
+      max-width: 90%;
+      margin: 0 auto;
+      line-height: 1.4;
+    }
+
+    /* CONTEÚDO E QUALIFICAÇÃO */
+    .doc-body {
+      font-size: 13.5px;
+      color: #1e293b;
+      line-height: 1.75;
+      text-align: justify;
+      flex-grow: 1;
+    }
+
+    .qualificacao {
+      margin-bottom: 20px;
+    }
+
+    .qualificacao strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .highlight-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0f172a;
+      padding: 14px 18px;
+      border-radius: 6px;
+      margin: 20px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* TABELA / OPÇÕES DE RAÇA/COR (PADRÃO IBGE) */
+    .options-container {
+      margin: 22px 0;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .options-header {
+      background: #f1f5f9;
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      border-bottom: 1.5px solid #cbd5e1;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .option-row:last-child {
+      border-bottom: none;
+    }
+
+    .option-row:hover {
+      background: #f8fafc;
+    }
+
+    .option-row.selected {
+      background: #f0fdf4;
+    }
+
+    .checkbox-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #64748b;
+      border-radius: 4px;
+      margin-right: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .option-row.selected .checkbox-box {
+      border-color: #0f172a;
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .option-text strong {
+      font-size: 14px;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .option-text span {
+      font-size: 12px;
+      color: #64748b;
+      margin-left: 6px;
+    }
+
+    .declaracao-final {
+      margin-top: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* DATA E LOCAL */
+    .date-location {
+      margin-top: 28px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* BLOCO DE ASSINATURA DIGITAL */
+    .signature-section {
+      margin-top: 36px;
+      padding-top: 10px;
+    }
+
+    .signature-box {
+      border: 2px dashed #94a3b8;
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 20px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .signature-line {
+      width: 320px;
+      height: 1px;
+      background: #0f172a;
+      margin: 20px auto 10px auto;
+    }
+
+    .sign-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .sign-cpf {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .sign-note {
+      margin-top: 8px;
+      font-size: 10.5px;
+      color: #059669;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #ecfdf5;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+    }
+
+    /* RODAPÉ DO DOCUMENTO */
+    .doc-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* REGRAS DE IMPRESSÃO / SALVAR COMO PDF */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      .toolbar {
+        display: none !important;
+      }
+
+      .sheet-container {
+        padding: 0 !important;
+      }
+
+      .a4-sheet {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        min-height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .signature-box {
+        border-color: #cbd5e1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE CONTROLE NA TELA -->
+  <header class="toolbar">
+    <div class="toolbar-title">
+      <span>📄 Autodeclaração Étnico-Racial</span>
+      <span class="toolbar-badge">eSocial S-2200</span>
+    </div>
+
+    <div class="toolbar-controls">
+      <span class="select-raca-label">Selecione sua Raça/Cor:</span>
+      <div class="raca-buttons">
+        <button type="button" class="raca-btn active" onclick="selectRaca('branca')">Branca</button>
+        <button type="button" class="raca-btn" onclick="selectRaca('parda')">Parda</button>
+        <button type="button" class="raca-btn" onclick="selectRaca('preta')">Preta</button>
+        <button type="button" class="raca-btn" onclick="selectRaca('amarela')">Amarela</button>
+        <button type="button" class="raca-btn" onclick="selectRaca('indigena')">Indígena</button>
+        <button type="button" class="raca-btn" onclick="selectRaca('blank')">Em Branco</button>
+      </div>
+
+      <button type="button" class="btn-action btn-print" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Salvar PDF / Imprimir
+      </button>
+
+      <a href="https://assinador.iti.br" target="_blank" class="btn-action btn-gov">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        Abrir Assinador Gov.br
+      </a>
+
+      <a href="index.html" class="btn-action btn-back">
+        Voltar ao Portal
+      </a>
+    </div>
+  </header>
+
+  <!-- FOLHA A4 FORMAL -->
+  <main class="sheet-container">
+    <article class="a4-sheet" id="printableSheet">
+
+      <!-- CABEÇALHO -->
+      <div class="doc-header">
+        <div class="brand-block">
+          <h2>Nexus Tecnologia & Engenharia S.A.</h2>
+          <p>Departamento de Gente & Gestão • Admissão de Colaboradores</p>
+        </div>
+        <div class="doc-badge-pill">
+          <div class="code">eSocial • S-2200</div>
+          <div class="sub">Autodeclaração Oficial</div>
+        </div>
+      </div>
+
+      <!-- TÍTULO -->
+      <div class="doc-title-block">
+        <h1>Autodeclaração Étnico-Racial</h1>
+        <p class="legal-ref">
+          Em cumprimento ao Decreto Federal nº 11.043/2022, Lei Federal nº 12.288/2010 (Estatuto da Igualdade Racial), Portaria MTE nº 3.784/2023 e exigências de cadastro do eSocial.
+        </p>
+      </div>
+
+      <!-- CORPO DA DECLARAÇÃO -->
+      <div class="doc-body">
+        <p class="qualificacao">
+          Eu, <strong>CARLOS EDUARDO DA SILVA</strong>, inscrito no Cadastro de Pessoas Físicas (CPF/MF) sob o nº <strong>123.456.789-00</strong>, admitido na empresa <strong>NEXUS TECNOLOGIA & ENGENHARIA S.A.</strong> para exercer a função do cargo de <strong>ANALISTA DE SISTEMAS PLENO</strong>, venho, por meio deste instrumento, nos termos da legislação vigente e para fins de cumprimento das exigências cadastrais do <strong>eSocial</strong> perante o Ministério do Trabalho e Emprego:
+        </p>
+
+        <div class="highlight-box">
+          <strong>1. DECLARAR</strong> que, conforme diretrizes e metodologia de autoclassificação do <strong>Instituto Brasileiro de Geografia e Estatística (IBGE)</strong>, identifico-me e reconheço-me pertencente à seguinte raça/cor:
+        </div>
+
+        <!-- TABELA OFICIAL DE OPÇÕES IBGE -->
+        <div class="options-container">
+          <div class="options-header">
+            Classificação Oficial IBGE (assinale apenas uma opção)
+          </div>
+
+          <div class="option-row selected" id="row-branca" onclick="selectRaca('branca')">
+            <div class="checkbox-box" id="box-branca">X</div>
+            <div class="option-text">
+              <strong>BRANCA</strong>
+              <span>(Pessoa que se autodeclara branca)</span>
+            </div>
+          </div>
+
+          <div class="option-row" id="row-preta" onclick="selectRaca('preta')">
+            <div class="checkbox-box" id="box-preta"> </div>
+            <div class="option-text">
+              <strong>PRETA</strong>
+              <span>(Pessoa que se autodeclara preta)</span>
+            </div>
+          </div>
+
+          <div class="option-row" id="row-parda" onclick="selectRaca('parda')">
+            <div class="checkbox-box" id="box-parda"> </div>
+            <div class="option-text">
+              <strong>PARDA</strong>
+              <span>(Pessoa que se autodeclara parda / miscigenada)</span>
+            </div>
+          </div>
+
+          <div class="option-row" id="row-amarela" onclick="selectRaca('amarela')">
+            <div class="checkbox-box" id="box-amarela"> </div>
+            <div class="option-text">
+              <strong>AMARELA</strong>
+              <span>(Pessoa de origem oriental / asiática)</span>
+            </div>
+          </div>
+
+          <div class="option-row" id="row-indigena" onclick="selectRaca('indigena')">
+            <div class="checkbox-box" id="box-indigena"> </div>
+            <div class="option-text">
+              <strong>INDÍGENA</strong>
+              <span>(Pessoa que se autodeclara indígena / povos originários)</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="declaracao-final">
+          <strong>2. DECLARAR</strong> que as informações aqui prestadas são a fiel expressão da verdade, estando ciente de que a falsidade na prestação destas informações me sujeitará às penalidades civis, administrativas e penais cabíveis, nos termos da legislação brasileira.
+        </p>
+
+        <!-- LOCAL E DATA -->
+        <p class="date-location">
+          Curitiba - PR, <span id="currentDateStr">05 de novembro de 2026</span>.
+        </p>
+
+        <!-- ASSINATURA -->
+        <div class="signature-section">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="sign-name">Carlos Eduardo da Silva</div>
+            <div class="sign-cpf">CPF: 123.456.789-00</div>
+            <div class="sign-note">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Assinar digitalmente via GOV.BR (ICP-Brasil) ou fisicamente à caneta
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RODAPÉ -->
+      <footer class="doc-footer">
+        <span>Nexus Tecnologia & Engenharia • Admissão Funcional</span>
+        <span>Formulário eSocial • Evento S-2200</span>
+        <span>Documento Confidencial</span>
+      </footer>
+
+    </article>
+  </main>
+
+  <script>
+    function selectRaca(type) {
+      const types = ['branca', 'preta', 'parda', 'amarela', 'indigena'];
+      
+      // Limpa todos
+      types.forEach(t => {
+        const row = document.getElementById('row-' + t);
+        const box = document.getElementById('box-' + t);
+        if (row) row.classList.remove('selected');
+        if (box) box.textContent = ' ';
+      });
+
+      // Atualiza botões do topo
+      document.querySelectorAll('.raca-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (type !== 'blank' && types.includes(type)) {
+        const selRow = document.getElementById('row-' + type);
+        const selBox = document.getElementById('box-' + type);
+        if (selRow) selRow.classList.add('selected');
+        if (selBox) selBox.textContent = 'X';
+
+        const activeBtn = Array.from(document.querySelectorAll('.raca-btn')).find(b => b.textContent.toLowerCase().includes(type));
+        if (activeBtn) activeBtn.classList.add('active');
+      } else {
+        const blankBtn = Array.from(document.querySelectorAll('.raca-btn')).find(b => b.textContent.toLowerCase().includes('branco'));
+        if (blankBtn) blankBtn.classList.add('active');
+      }
+    }
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const rParam = urlParams.get('raca');
+      if (rParam) selectRaca(rParam.toLowerCase());
+    } catch(e) {}
+
+    try {
+      const now = new Date();
+      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      const dia = String(now.getDate()).padStart(2, '0');
+      const mes = meses[now.getMonth()];
+      const ano = now.getFullYear();
+      document.getElementById('currentDateStr').textContent = `${dia} de ${mes} de ${ano}`;
+    } catch(e) {}
+  </script>
+</body>
+</html>
